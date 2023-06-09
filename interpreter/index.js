@@ -24,7 +24,7 @@ const OPCODE_MAP = {
   GT,
   EQ,
   AND,
-  O,
+  OR,
   JUMP,
   JUMPI
 }
@@ -70,7 +70,7 @@ class Interpreter {
           case PUSH:
             this.state.programCounter++;
             if (this.state.programCounter === this.state.code.length) {
-              throw new Error(`The 'PUSH' instruction cannot be last.`);
+              throw new Error("The 'PUSH' instruction cannot be last.");
             }
             const value = this.state.code[this.state.programCounter];
             this.state.stack.push(value);
