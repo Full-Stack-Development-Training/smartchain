@@ -1,0 +1,2 @@
+# smartchain
+Ethereum system
