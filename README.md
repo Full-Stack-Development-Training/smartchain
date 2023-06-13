@@ -17,3 +17,7 @@ requires miners to solve a puzzle to mine blocks
 1. Calculate a block target hash.
 2. Try and find an 'underTargetHash' lower than the block target hash.
 underTargetHash consists of: timestamp, number, beneficiary, difficulty and nonce value.
+
+### The Blockchain Network
+- Private Application and API
+- Pub/sub - Server-to-server Communication
