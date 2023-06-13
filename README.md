@@ -21,3 +21,4 @@ underTargetHash consists of: timestamp, number, beneficiary, difficulty and nonc
 ### The Blockchain Network
 - Private Application and API
 - Pub/sub - Server-to-server Communication
+-- PubNuB
