@@ -22,3 +22,15 @@ underTargetHash consists of: timestamp, number, beneficiary, difficulty and nonc
 - Private Application and API
 - Pub/sub - Server-to-server Communication
 -- PubNuB
+
+### Accounts and Transactions
+- Cryptocurrency
+- Mining reward
+- Transactions record state changes
+- Account types:
+1. A  regular account to represent an individual (collect/exchange currency with other accounts)
+2. A smart contract account (contains code)
+- Account fields:
+1. keyPair - (public/private) ensures that the account is owned by one individual
+2. address
+3. balance
