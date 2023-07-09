@@ -1,14 +1,26 @@
 const express = require("express");
+const bodyParser = require("body-parser");
 const request = require("request");
 const Blockchain = require("../blockchain");
 const Block = require("../blockchain/block");
 const PubSub = require("./pubsub");
+const TransactionQueue = require("../transaction/transaction-queue");
+const Account = require("../account");
+const Transaction = require("../transaction");
 
 const app = express();
 
-const blockchain = new Blockchain();
+app.use(bodyParser.json());
 
-const pubsub = new PubSub({ blockchain });
+const blockchain = new Blockchain();
+const transactionQueue = new TransactionQueue();
+const pubsub = new PubSub({ blockchain, transactionQueue });
+const account = new Account();
+const transaction = Transaction.createTransaction({ account });
+setTimeout(() => {
+  pubsub.broadcastTransaction(transaction);
+}, 500);
+// transactionQueue.add(transaction);
 
 app.get("/blockchain", (req, res, next) => {
   const { chain } = blockchain;
@@ -18,12 +30,16 @@ app.get("/blockchain", (req, res, next) => {
 
 app.get("/blockchain/mine", (req, res, next) => {
   const lastBlock = blockchain.chain[blockchain.chain.length - 1];
-  const block = Block.mineBlock({ lastBlock });
+  const block = Block.mineBlock({
+    lastBlock,
+    beneficiary: account.address,
+    transactionSeries: transactionQueue.getTransactionSeries(),
+  });
 
   // block.blockHeaders.parentHash = "foo";
 
   blockchain
-    .addBlock({ block })
+    .addBlock({ block, transactionQueue })
     .then(() => {
       pubsub.broadcastBlock(block);
       res.json({ block });
@@ -31,9 +47,21 @@ app.get("/blockchain/mine", (req, res, next) => {
     .catch(next); //console.log(error) or error => next(error)
 });
 
+app.post("/account/transact", (req, res, next) => {
+  const { to, value } = req.body;
+  const transaction = Transaction.createTransaction({
+    account: !to ? new Account() : account,
+    to,
+    value,
+  });
+  // transactionQueue.add(transaction);
+  pubsub.broadcastTransaction(transaction);
+  res.json({ transaction });
+});
+
 app.use((err, req, res, next) => {
   console.error("Internal server error:", err);
-  res.status(500).json({ massage: err.message });
+  res.status(500).json({ message: err.message });
 });
 
 const peer = process.argv.includes("--peer");

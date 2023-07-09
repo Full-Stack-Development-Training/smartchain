@@ -6,8 +6,9 @@ const HASH_LENGTH = 64;
 const MAX_HASH_VALUE = parseInt("f".repeat(HASH_LENGTH), 16);
 const MAX_NONCE_VALUE = 2 ** 64;
 class Block {
-  constructor({ blockHeaders }) {
+  constructor({ blockHeaders, transactionSeries }) {
     this.blockHeaders = blockHeaders;
+    this.transactionSeries = transactionSeries;
   }
   static calculateBlockTargetHash({ lastBlock }) {
     const value = (MAX_HASH_VALUE / lastBlock.blockHeaders.difficulty).toString(
@@ -28,7 +29,7 @@ class Block {
     }
     return difficulty + 1;
   }
-  static mineBlock({ lastBlock, beneficiary }) {
+  static mineBlock({ lastBlock, beneficiary, transactionSeries }) {
     const target = Block.calculateBlockTargetHash({ lastBlock });
     let timestamp, truncatedBlockHeaders, header, nonce, underTargetHash;
     do {
@@ -39,6 +40,10 @@ class Block {
         difficulty: Block.adjustDifficulty({ lastBlock, timestamp }),
         number: lastBlock.blockHeaders.number + 1,
         timestamp,
+        /**
+         * the `TransactionRoot` will be refactored once Tries are implemented.
+         */
+        transactionsRoot: keccakHash(transactionSeries)
       };
       header = keccakHash(truncatedBlockHeaders);
       nonce = Math.floor(Math.random() * MAX_NONCE_VALUE);
@@ -49,6 +54,7 @@ class Block {
         ...truncatedBlockHeaders,
         nonce,
       },
+      transactionSeries,
     });
   }
   static genesis() {
@@ -59,7 +65,9 @@ class Block {
       if (keccakHash(block) === keccakHash(Block.genesis())) {
         return resolve();
       }
-      if (keccakHash(lastBlock.blockHeaders) !== block.blockHeaders.parentHash) {
+      if (
+        keccakHash(lastBlock.blockHeaders) !== block.blockHeaders.parentHash
+      ) {
         return reject(
           new Error(
             "The parent hash must be a hash of the last block's headers"

@@ -6,7 +6,7 @@ class Blockchain {
   constructor() {
     this.chain = [Block.genesis()];
   }
-  addBlock({ block }) {
+  addBlock({ block, transactionQueue }) {
     return new Promise((resolve, reject) => {
       Block.validateBlock({
         lastBlock: this.chain[this.chain.length - 1],
@@ -14,6 +14,9 @@ class Blockchain {
       })
         .then(() => {
           this.chain.push(block);
+          transactionQueue.clearBlockTransactions({
+            transactionSeries: block.transactionSeries
+          })
           return resolve();
         })
         .catch(reject); // (error) => reject(error)
