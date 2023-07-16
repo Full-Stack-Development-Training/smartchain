@@ -34,3 +34,6 @@ underTargetHash consists of: timestamp, number, beneficiary, difficulty and nonc
 1. keyPair - (public/private) ensures that the account is owned by one individual
 2. address
 3. balance
+
+### World State and Running bloks of transactions
+- Tries (Patricia trie)

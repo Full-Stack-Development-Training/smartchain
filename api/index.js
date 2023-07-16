@@ -7,10 +7,13 @@ const PubSub = require("./pubsub");
 const TransactionQueue = require("../transaction/transaction-queue");
 const Account = require("../account");
 const Transaction = require("../transaction");
+const State = require('../store/state')
 
 const app = express();
 
 app.use(bodyParser.json());
+
+const state = new State()
 
 const blockchain = new Blockchain();
 const transactionQueue = new TransactionQueue();
@@ -34,6 +37,7 @@ app.get("/blockchain/mine", (req, res, next) => {
     lastBlock,
     beneficiary: account.address,
     transactionSeries: transactionQueue.getTransactionSeries(),
+    stateRoot: state.getStateRoot()
   });
 
   // block.blockHeaders.parentHash = "foo";

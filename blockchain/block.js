@@ -29,7 +29,7 @@ class Block {
     }
     return difficulty + 1;
   }
-  static mineBlock({ lastBlock, beneficiary, transactionSeries }) {
+  static mineBlock({ lastBlock, beneficiary, transactionSeries, stateRoot }) {
     const target = Block.calculateBlockTargetHash({ lastBlock });
     let timestamp, truncatedBlockHeaders, header, nonce, underTargetHash;
     do {
@@ -43,7 +43,8 @@ class Block {
         /**
          * the `TransactionRoot` will be refactored once Tries are implemented.
          */
-        transactionsRoot: keccakHash(transactionSeries)
+        transactionsRoot: keccakHash(transactionSeries),
+        stateRoot
       };
       header = keccakHash(truncatedBlockHeaders);
       nonce = Math.floor(Math.random() * MAX_NONCE_VALUE);

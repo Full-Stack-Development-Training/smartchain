@@ -22,7 +22,11 @@ describe("Block", () => {
     let lastBlock, minedBlock;
     beforeEach(() => {
       lastBlock = Block.genesis();
-      minedBlock = Block.mineBlock({ lastBlock, beneficiary: "beneficiary" });
+      minedBlock = Block.mineBlock({
+        lastBlock,
+        beneficiary: "beneficiary",
+        transactionSeries: [],
+      });
     });
     it("mines a block", () => {
       expect(minedBlock).toBeInstanceOf(Block);
@@ -69,7 +73,11 @@ describe("Block", () => {
     let block, lastBlock;
     beforeEach(() => {
       lastBlock = Block.genesis();
-      block = Block.mineBlock({ lastBlock, beneficiary: "beneficiary" });
+      block = Block.mineBlock({
+        lastBlock,
+        beneficiary: "beneficiary",
+        transactionSeries: [],
+      });
     });
     it("resolves when the block is the genesis block", () => {
       expect(Block.validateBlock({ block: Block.genesis() })).resolves;
@@ -95,15 +103,15 @@ describe("Block", () => {
         message: "The difficulty must only adjust by 1",
       });
     });
-    it('rejects when the proof of work requirement is not met', ()=> {
-      const originalCalculateBlockTargetHash = Block.calculateBlockTargetHash
+    it("rejects when the proof of work requirement is not met", () => {
+      const originalCalculateBlockTargetHash = Block.calculateBlockTargetHash;
       Block.calculateBlockTargetHash = () => {
-        return '0'.repeat(64)
-      }
+        return "0".repeat(64);
+      };
       expect(Block.validateBlock({ lastBlock, block })).rejects.toMatchObject({
         message: "The block does not meet the proof of work requirement",
       });
-      Block.calculateBlockTargetHash = originalCalculateBlockTargetHash
-    })
+      Block.calculateBlockTargetHash = originalCalculateBlockTargetHash;
+    });
   });
 });
