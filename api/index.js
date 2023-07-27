@@ -7,15 +7,15 @@ const PubSub = require("./pubsub");
 const TransactionQueue = require("../transaction/transaction-queue");
 const Account = require("../account");
 const Transaction = require("../transaction");
-const State = require('../store/state')
+const State = require("../store/state");
 
 const app = express();
 
 app.use(bodyParser.json());
 
-const state = new State()
+const state = new State();
 
-const blockchain = new Blockchain();
+const blockchain = new Blockchain({ state });
 const transactionQueue = new TransactionQueue();
 const pubsub = new PubSub({ blockchain, transactionQueue });
 const account = new Account();
@@ -37,7 +37,7 @@ app.get("/blockchain/mine", (req, res, next) => {
     lastBlock,
     beneficiary: account.address,
     transactionSeries: transactionQueue.getTransactionSeries(),
-    stateRoot: state.getStateRoot()
+    stateRoot: state.getStateRoot(),
   });
 
   // block.blockHeaders.parentHash = "foo";
@@ -61,6 +61,16 @@ app.post("/account/transact", (req, res, next) => {
   // transactionQueue.add(transaction);
   pubsub.broadcastTransaction(transaction);
   res.json({ transaction });
+});
+
+app.get("/account/balance", (req, res, next) => {
+  const { address } = req.query;
+  const balance = Account.calculateBalance({
+    address: address || account.address,
+    state,
+  });
+
+  res.json({ balance });
 });
 
 app.use((err, req, res, next) => {

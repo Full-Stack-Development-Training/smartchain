@@ -1,6 +1,8 @@
 const { time } = require("console");
 const { GENESIS_DATA, MINE_RATE } = require("../config");
 const { keccakHash } = require("../util");
+const Transaction = require("../transaction");
+const Trie = require("../store/trie");
 
 const HASH_LENGTH = 64;
 const MAX_HASH_VALUE = parseInt("f".repeat(HASH_LENGTH), 16);
@@ -31,6 +33,7 @@ class Block {
   }
   static mineBlock({ lastBlock, beneficiary, transactionSeries, stateRoot }) {
     const target = Block.calculateBlockTargetHash({ lastBlock });
+    const transactionsTrie = Trie.buildTrie({ items: transactionSeries });
     let timestamp, truncatedBlockHeaders, header, nonce, underTargetHash;
     do {
       timestamp = Date.now();
@@ -40,11 +43,8 @@ class Block {
         difficulty: Block.adjustDifficulty({ lastBlock, timestamp }),
         number: lastBlock.blockHeaders.number + 1,
         timestamp,
-        /**
-         * the `TransactionRoot` will be refactored once Tries are implemented.
-         */
-        transactionsRoot: keccakHash(transactionSeries),
-        stateRoot
+        transactionsRoot: transactionsTrie.rootHash,
+        stateRoot,
       };
       header = keccakHash(truncatedBlockHeaders);
       nonce = Math.floor(Math.random() * MAX_NONCE_VALUE);
@@ -61,7 +61,7 @@ class Block {
   static genesis() {
     return new this(GENESIS_DATA);
   }
-  static validateBlock({ lastBlock, block }) {
+  static validateBlock({ lastBlock, block, state }) {
     return new Promise((resolve, reject) => {
       if (keccakHash(block) === keccakHash(Block.genesis())) {
         return resolve();
@@ -85,6 +85,18 @@ class Block {
       ) {
         return reject(new Error("The difficulty must only adjust by 1"));
       }
+      const rebuildTransacionsTrie = Trie.buildTrie({
+        items: block.transactionSeries,
+      });
+      if (
+        rebuildTransacionsTrie.rootHash !== block.blockHeaders.transactionsRoot
+      ) {
+        return reject(
+          new Error(
+            `The rebuilt transactions root does not match the block's transactions root: ${block.blockHeaders.transactionsRoot}`
+          )
+        );
+      }
       const target = Block.calculateBlockTargetHash({ lastBlock });
       const { blockHeaders } = block;
       const { nonce } = blockHeaders;
@@ -97,8 +109,19 @@ class Block {
           new Error("The block does not meet the proof of work requirement")
         );
       }
-      return resolve();
+      Transaction.validateTransactionSeries({
+        state,
+        transactionSeries: block.transactionSeries,
+      })
+        .then(resolve) // () => resolve()
+        .catch(reject); // (error) => reject(error)
     });
+  }
+
+  static runBlock({ block, state }) {
+    for (let transaction of block.transactionSeries) {
+      Transaction.runTransaction({ transaction, state });
+    }
   }
 }
 

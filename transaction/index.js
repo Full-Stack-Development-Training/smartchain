@@ -39,9 +39,9 @@ class Transaction {
     });
   }
 
-  static validateStandardTransaction({ transaction }) {
+  static validateStandardTransaction({ state, transaction }) {
     return new Promise((resolve, reject) => {
-      const { from, signature } = transaction;
+      const { id, from, signature, value, to } = transaction;
       const transactionData = { ...transaction };
       delete transactionData.signature;
 
@@ -54,6 +54,19 @@ class Transaction {
       ) {
         return reject(new Error(`Transaction ${id} signature is invalid.`));
       }
+      const fromBalance = state.getAccount({ address: from }).balance;
+      if (value > fromBalance) {
+        return reject(
+          new Error(
+            `Transaction value: ${value} exceeds balance: ${fromBalance}`
+          )
+        );
+      }
+      const toAccount = state.getAccount({ address: to });
+      if (!toAccount) {
+        return reject(new Error(`The to field: ${to} does not exist`));
+      }
+
       return resolve();
     });
   }
@@ -79,6 +92,65 @@ class Transaction {
 
       return resolve();
     });
+  }
+
+  static validateTransactionSeries({ transactionSeries, state }) {
+    return new Promise(async (resolve, reject) => {
+      for (let transaction of transactionSeries) {
+        try {
+          switch (transaction.data.type) {
+            case TRANSACTION_TYPE_MAP.CREATE_ACCOUNT:
+              await Transaction.validateCreateAccountTransaction({
+                transaction,
+              });
+              break;
+            case TRANSACTION_TYPE_MAP.TRANSACT:
+              await Transaction.validateStandardTransaction({
+                state,
+                transaction,
+              });
+              break;
+            default:
+              break;
+          }
+        } catch (error) {
+          return reject(error);
+        }
+      }
+      return resolve();
+    });
+  }
+  static runTransaction({ state, transaction }) {
+    switch (transaction.data.type) {
+      case TRANSACTION_TYPE_MAP.TRANSACT:
+        Transaction.runStandardTransaction({ state, transaction });
+        console.log(
+          " --Updated account data to reflect the standard transaction"
+        );
+        break;
+      case TRANSACTION_TYPE_MAP.CREATE_ACCOUNT:
+        Transaction.runCreateAccountTransaction({ state, transaction });
+        console.log(" -- Stored the account data");
+        break;
+      default:
+        break;
+    }
+  }
+
+  static runStandardTransaction({ state, transaction }) {
+    const fromAccount = state.getAccount({ address: transaction.from });
+    const toAccount = state.getAccount({ address: transaction.to });
+    const { value } = transaction;
+    fromAccount.balance -= value;
+    toAccount.balance += value;
+    state.putAccount({ address: transaction.from, accountData: fromAccount });
+    state.putAccount({ address: transaction.to, accountData: toAccount });
+  }
+
+  static runCreateAccountTransaction({ state, transaction }) {
+    const { accountData } = transaction.data;
+    const { address } = accountData;
+    state.putAccount({ address, accountData });
   }
 }
 
