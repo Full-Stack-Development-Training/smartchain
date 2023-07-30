@@ -37,3 +37,4 @@ underTargetHash consists of: timestamp, number, beneficiary, difficulty and nonc
 
 ### World State and Running bloks of transactions
 - Tries (Patricia trie)
+- Rewarding miners
